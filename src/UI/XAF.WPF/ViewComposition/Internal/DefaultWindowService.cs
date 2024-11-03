@@ -19,7 +19,7 @@ using XAF.UI.WPF.Attributes;
 using XAF.UI.WPF.Hosting;
 
 namespace XAF.UI.WPF.ViewComposition.Internal;
-internal class WindowService : IWindowService
+internal class DefaultWindowService : IWindowService
 {
     private readonly IBundleProvider _bundleProvider;
     private readonly IServiceProvider _serviceProvider;
@@ -28,7 +28,7 @@ internal class WindowService : IWindowService
     private readonly List<IXafBundle> _openWindows = new();
     private Type _defaultWindowType = typeof(Window);
 
-    public WindowService(IBundleProvider bundleProvider, IServiceProvider serviceProvider, IWpfEnvironment wpfEnvironment)
+    public DefaultWindowService(IBundleProvider bundleProvider, IServiceProvider serviceProvider, IWpfEnvironment wpfEnvironment)
     {
         _bundleProvider = bundleProvider;
         _serviceProvider = serviceProvider;

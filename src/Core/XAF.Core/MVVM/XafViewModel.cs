@@ -20,9 +20,19 @@ public abstract class XafViewModel : NotifyPropertyChanged, IXafViewModel
         return 0;
     }
 
-    public Task WaitForViewClose()
+    public virtual Task WaitForViewClose()
     {
         return _waitForClose.WaitAsync();
+    }
+
+    public virtual Task LoadAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    public virtual Task WhenUnselected()
+    {
+        return Task.CompletedTask;
     }
 }
 

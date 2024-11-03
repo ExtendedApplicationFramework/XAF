@@ -26,7 +26,7 @@ public static class HostBuilderExtensions
 
         builder.Services.AddHostedService<WpfService>();
         builder.Services.TryAddTransient<IBundleProvider, BundleProvider>();
-        builder.Services.TryAddSingleton<IWindowService, WindowService>();
+        builder.Services.TryAddSingleton<IWindowService, DefaultWindowService>();
         builder.Services.TryAddSingleton<IViewPresenter, ViewPresenter>();
 
         return builder;

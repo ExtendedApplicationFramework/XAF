@@ -1,6 +1,8 @@
-﻿namespace XAF.Core.Modularity;
+﻿namespace XAF.Modularity;
 public abstract class ModuleHandler<TModule> : IModuleHandler
 {
+    public Type ModuleType { get; } = typeof(TModule);
+
     public abstract Task LoadAsync(TModule module);
 
     public abstract Task StartAsync(TModule module);

@@ -3,11 +3,11 @@
 namespace XAF.Core.UI;
 public interface IWindowService
 {
-    event AsyncEventHandler<DialogEventArgs> DialogRequested;
+    IObservable<DialogParameters> DialogRequested();
 
-    event AsyncEventHandler<DialogEventArgs> DialogOpened;
+    IObservable<DialogParameters> DialogOpened();
 
-    event AsyncEventHandler<DialogEventArgs> DialogClosed;
+    IObservable<DialogParameters> DialogClosed();
 
     Task<bool> OpenWindowAsync<TViewModel>(CancellationToken cancle)
     where TViewModel : IXafViewModel;
@@ -37,6 +37,7 @@ public interface IWindowService
         where TViewModel : class, IXafDialogViewModel<TResult, TParameter>;
 }
 
-public record DialogEventArgs(CancellationTokenSource TokenSource, IXafViewModel ViewModel, object? Parameter, object? Result)
+public record DialogParameters(IXafViewModel ViewModel, object? Parameter, object? Result)
 {
+    public bool Cancle { get; set; }
 }

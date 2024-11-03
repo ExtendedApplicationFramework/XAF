@@ -4,9 +4,9 @@ namespace XAF.Core.UI;
 public interface INavigationService
 {
 
-    event AsyncEventHandler<NavigationEventArgs> NavigationRequested;
+    IObservable<NavigationParameters> NavigationRequested();
 
-    event AsyncEventHandler<NavigationEventArgs> NavigationCompleted;
+    IObservable<NavigationParameters> NavigationCompleted();
 
     Task<bool> NavigateToAsync<TViewModel>(object presenterKey)
         where TViewModel : class, IXafViewModel;
@@ -21,7 +21,7 @@ public interface INavigationService
         where TViewModel : class, IXafViewModel<TParameter>;
 }
 
-public record NavigationEventArgs(IXafViewModel newVm, IXafViewModel prefVm, object PresenterKey, object? Parameter)
+public record NavigationParameters(IXafViewModel newVm, IXafViewModel prefVm, object PresenterKey, object? Parameter)
 {
     public bool Cancle { get; set; }
 }

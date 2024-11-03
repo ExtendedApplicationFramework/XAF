@@ -31,4 +31,7 @@ public interface IViewCompositionService
     IObservable<ViewManipulation> ViewManipulationCompleted(object presenterKey);
 }
 
-public record ViewManipulation(CancellationTokenSource TokenSource, ViewManipulationType Type, IXafViewModel ViewModel, object PresenterKey, object? Parameter = null);
+public record ViewManipulation(ViewManipulationType Type, IXafViewModel ViewModel, object PresenterKey, object? Parameter = null)
+{
+    public bool Cancle { get; set; }
+}

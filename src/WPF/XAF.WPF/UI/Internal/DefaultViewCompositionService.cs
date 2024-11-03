@@ -22,20 +22,27 @@ internal sealed class DefaultViewCompositionService : IViewCompositionService
 
     public Task<bool> AddViewAsync<TViewModel>(object presenterKey, CancellationToken cancellation) where TViewModel : class, IXafViewModel
     {
-        var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
-
         var vm = _serviceProvider.GetRequiredService<TViewModel>();
-        var manipulation = new ViewManipulation(tokenSource, ViewManipulationType.Add, vm, presenterKey);
+        var manipulation = new ViewManipulation(ViewManipulationType.Add, vm, presenterKey);
 
         _viewManipulationRequestedSubject.OnNext(manipulation);
-        var presenter = _presenterRepository.GetPresenter(presenterKey);
 
-        if (tokenSource.IsCancellationRequested)
+        if (manipulation.Cancle)
         {
+            _viewManipulationCompletedSubject.OnNext(manipulation);
             return Task.FromResult(false);
         }
 
-        if (!presenter.Add(vm, tokenSource.Token))
+        var presenter = _presenterRepository.GetPresenter(presenterKey);
+
+        if (cancellation.IsCancellationRequested)
+        {
+            manipulation.Cancle = true;
+            _viewManipulationCompletedSubject.OnNext(manipulation);
+            return Task.FromResult(false);
+        }
+
+        if (!presenter.Add(vm, cancellation))
         {
             return Task.FromResult(false);
         }
@@ -46,22 +53,30 @@ internal sealed class DefaultViewCompositionService : IViewCompositionService
 
     public async Task<bool> AddViewAsync<TViewModel, TParameter>(TParameter parameter, object presenterKey, CancellationToken cancellation) where TViewModel : class, IXafViewModel<TParameter>
     {
-        var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
 
         var vm = _serviceProvider.GetRequiredService<TViewModel>();
-        var manipulation = new ViewManipulation(tokenSource, ViewManipulationType.Add, vm, presenterKey, parameter);
+        var manipulation = new ViewManipulation(ViewManipulationType.Add, vm, presenterKey, parameter);
 
         _viewManipulationRequestedSubject.OnNext(manipulation);
+
+        if (manipulation.Cancle)
+        {
+            _viewManipulationCompletedSubject.OnNext(manipulation);
+            return false;
+        }
+
         var presenter = _presenterRepository.GetPresenter(presenterKey);
 
-        if (tokenSource.IsCancellationRequested)
+        if (cancellation.IsCancellationRequested)
         {
+            manipulation.Cancle = true;
+            _viewManipulationCompletedSubject.OnNext(manipulation);
             return false;
         }
 
         vm.Prepare(parameter);
 
-        if (!presenter.Add(vm, tokenSource.Token))
+        if (!presenter.Add(vm, cancellation))
         {
             return false;
         }
@@ -72,24 +87,31 @@ internal sealed class DefaultViewCompositionService : IViewCompositionService
 
     public Task<bool> AddViewAsync<TViewModel>(TViewModel vm, object presenterKey, CancellationToken cancle) where TViewModel : IXafViewModel
     {
-        var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancle);
-
-        var manipulation = new ViewManipulation(tokenSource, ViewManipulationType.Add, vm, presenterKey);
+        var manipulation = new ViewManipulation(ViewManipulationType.Add, vm, presenterKey);
 
         _viewManipulationRequestedSubject.OnNext(manipulation);
-        var presenter = _presenterRepository.GetPresenter(presenterKey);
 
-        if (tokenSource.IsCancellationRequested)
+        if (manipulation.Cancle)
         {
+            _viewManipulationCompletedSubject.OnNext(manipulation);
             return Task.FromResult(false);
         }
 
-        if (!presenter.Add(vm, tokenSource.Token))
+        var presenter = _presenterRepository.GetPresenter(presenterKey);
+
+        if (cancle.IsCancellationRequested)
+        {
+            _viewManipulationCompletedSubject.OnNext(manipulation);
+            return Task.FromResult(false);
+        }
+
+        if (!presenter.Add(vm, cancle))
         {
             return Task.FromResult(false);
         }
 
         _viewManipulationCompletedSubject.OnNext(manipulation);
+
         return Task.FromResult(true);
     }
 
@@ -97,9 +119,16 @@ internal sealed class DefaultViewCompositionService : IViewCompositionService
     {
         var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancle);
 
-        var manipulation = new ViewManipulation(tokenSource, ViewManipulationType.Add, vm, presenterKey, parameter);
+        var manipulation = new ViewManipulation(ViewManipulationType.Add, vm, presenterKey, parameter);
 
         _viewManipulationRequestedSubject.OnNext(manipulation);
+
+        if (manipulation.Cancle)
+        {
+            _viewManipulationCompletedSubject.OnNext(manipulation);
+            return false;
+        }
+
         var presenter = _presenterRepository.GetPresenter(presenterKey);
 
         if (tokenSource.IsCancellationRequested)
@@ -122,13 +151,22 @@ internal sealed class DefaultViewCompositionService : IViewCompositionService
     {
         var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancle);
 
-        var manipulation = new ViewManipulation(tokenSource, ViewManipulationType.Remove, vm, presenterKey);
+        var manipulation = new ViewManipulation(ViewManipulationType.Remove, vm, presenterKey);
 
         _viewManipulationRequestedSubject.OnNext(manipulation);
+
+        if (manipulation.Cancle)
+        {
+            _viewManipulationCompletedSubject.OnNext(manipulation);
+            return Task.FromResult(true);
+        }
+
         var presenter = _presenterRepository.GetPresenter(presenterKey);
 
         if (tokenSource.IsCancellationRequested)
         {
+            manipulation.Cancle = true;
+            _viewManipulationCompletedSubject.OnNext(manipulation);
             return Task.FromResult(false);
         }
 
@@ -145,13 +183,22 @@ internal sealed class DefaultViewCompositionService : IViewCompositionService
     {
         var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
 
-        var manipulation = new ViewManipulation(tokenSource, ViewManipulationType.Select, vm, presenterKey);
+        var manipulation = new ViewManipulation(ViewManipulationType.Select, vm, presenterKey);
 
         _viewManipulationRequestedSubject.OnNext(manipulation);
+
+        if (manipulation.Cancle)
+        {
+            _viewManipulationCompletedSubject.OnNext(manipulation);
+            return Task.FromResult(false);
+        }
+
         var presenter = _presenterRepository.GetPresenter(presenterKey);
 
         if (tokenSource.IsCancellationRequested)
         {
+            manipulation.Cancle = true;
+            _viewManipulationCompletedSubject.OnNext(manipulation);
             return Task.FromResult(false);
         }
 
@@ -168,13 +215,22 @@ internal sealed class DefaultViewCompositionService : IViewCompositionService
     {
         var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
 
-        var manipulation = new ViewManipulation(tokenSource, ViewManipulationType.Select, vm, presenterKey, parameter);
+        var manipulation = new ViewManipulation(ViewManipulationType.Select, vm, presenterKey, parameter);
 
         _viewManipulationRequestedSubject.OnNext(manipulation);
+
+        if (manipulation.Cancle)
+        {
+            _viewManipulationCompletedSubject.OnNext(manipulation);
+            return false;
+        }
+
         var presenter = _presenterRepository.GetPresenter(presenterKey);
 
         if (tokenSource.IsCancellationRequested)
         {
+            manipulation.Cancle = true;
+            _viewManipulationCompletedSubject.OnNext(manipulation);
             return false;
         }
 

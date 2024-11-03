@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting.Internal;
 using System.Windows;
+using XAF.Core.Hosting;
 using XAF.Core.UI;
+using XAF.Modularity.Context;
+using XAF.WPF.Modularity.Internal;
 using XAF.WPF.UI;
 using XAF.WPF.UI.Internal;
 
@@ -34,8 +36,16 @@ public static class HostingBuilderExtensions
             .AddSingleton<IViewCompositionService, DefaultViewCompositionService>()
             .AddSingleton<IViewModelPresenterFactory, DefaultViewModelPresenterFactory>()
             .AddSingleton<ViewModelPresenterLocator>()
-            .AddTransient<IViewCollection, ViewCollection>();
-        ConsoleLifetime
+            .AddTransient<IViewCollection, ViewCollection>()
+            .AddModuleHandler<WpfModuleHandler>();
+
+        var wpfAssemblyLocation = typeof(Window).Assembly.Location;
+
+        if (!ModuleContextLoaderOptions.Default.AdditionalRuntimePaths.Contains(wpfAssemblyLocation))
+        {
+            ModuleContextLoaderOptions.Default.AdditionalRuntimePaths.Add(wpfAssemblyLocation);
+        }
+
         return services;
     }
 }
