@@ -3,7 +3,7 @@
 namespace XAF.Core.UI;
 public interface IWindowService
 {
-    IObservable<DialogParameters> DialogRequested();
+    IObservable<DialogParameters> OpenDialogRequested();
 
     IObservable<DialogParameters> DialogOpened();
 

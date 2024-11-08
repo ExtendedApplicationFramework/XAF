@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Windows;
 using XAF.Core.ExtensionMethods;
 using XAF.Core.MVVM;
@@ -41,7 +42,7 @@ internal class ViewModelPresenter : IViewModelPresenter
 
         SelectedViews
             .OnItemAdded(async i => await i.viewModel.WhenSelected())
-            .OnItemRemoved(async i => await i.viewModel.WhenUnselected())
+            .OnItemRemoved( async i => await i.viewModel.WhenUnselected())
             .Subscribe()
             .DisposeWith(_compositeDisposable);
     }
