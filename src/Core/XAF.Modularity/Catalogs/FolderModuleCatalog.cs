@@ -15,7 +15,7 @@ public class FolderModuleCatalog : IModuleCatalog
         _options = options ?? new FolderModuleCatalogOptions();
     }
 
-    public async Task<Module[]> GetModulesAsync(Func<Type, bool> typeMatch)
+    public async Task<IModuleDescription[]> GetModulesAsync(Func<Type, bool> typeMatch)
     {
         var files = new List<string>();
 

@@ -6,21 +6,14 @@ namespace XAF.WPF.Modularity.Internal;
 internal class WpfModuleHandler : ModuleHandler<IWpfModule>
 {
     private readonly IViewLocator _viewLocator;
-    private readonly IViewCompositionService _viewCompositionService;
 
-    public WpfModuleHandler(IViewLocator viewLocator, IViewCompositionService viewCompositionService)
+    public WpfModuleHandler(IViewLocator viewLocator)
     {
         _viewLocator = viewLocator;
-        _viewCompositionService = viewCompositionService;
     }
 
-    public override Task LoadAsync(IWpfModule module)
+    protected override Task LoadAsync(IWpfModule module)
     {
         return _viewLocator.DiscoverViewsAsync(module.GetType().Assembly);
-    }
-
-    public override Task StartAsync(IWpfModule module)
-    {
-        return module.StartAsync(_viewCompositionService);
     }
 }

@@ -10,9 +10,14 @@ public static class HostBuilderExtensions
 {
     public static IHostApplicationBuilder UseXaf(this IHostApplicationBuilder builder)
     {
+        builder.Services.AddModularity();
+        builder.Services.AddSingleton<IModuleManager, DiModuleManager>();
         builder.Services.AddHostedService<XafConfigurationService>();
+        builder.Services.AddModuleHandler<ModuleHandler>();
         builder.Services.AddModuleHandler<ServiceModuleHandler>();
-        builder.Services.AddSingleton(builder.Services);
+        
+        var globalServices = new List<ServiceDescriptor>(builder.Services);
+        builder.Services.AddSingleton<IList<ServiceDescriptor>>(globalServices);
 
         return builder;
     }
@@ -29,8 +34,6 @@ public static class HostBuilderExtensions
         public Task StartingAsync(CancellationToken cancellationToken)
         {
             ModuleContextLoaderOptions.Default.LoggerFactory = _services.GetRequiredService<ILogger<ModuleContextLoader>>;
-            ModuleManagerOptions.Default.ModuleInstanceFactory = module => Task.FromResult(ActivatorUtilities.GetServiceOrCreateInstance(_services, module.Type));
-
             return Task.CompletedTask;
         }
 

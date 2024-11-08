@@ -1,16 +1,11 @@
 ﻿namespace XAF.Modularity;
 public interface IModuleManager
 {
-    IObservable<Module> ModuleLoading();
-    IObservable<Module> ModuleLoaded();
-    IObservable<Module> ModuleStarting();
-    IObservable<Module> ModuleStarted();
-
     bool Initialized { get; }
 
-    Task Initialize();
+    Task DiscoverModules();
 
-    IEnumerable<Module> Modules { get; }
+    IEnumerable<IModuleDescription> Modules { get; }
 
     Task LoadModules();
 

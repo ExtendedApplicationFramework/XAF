@@ -1,7 +1,7 @@
 ﻿using XAF.Core.UI;
+using XAF.Modularity;
 
 namespace XAF.WPF.Modularity;
-public interface IWpfModule
+public interface IWpfModule : IModule
 {
-    Task StartAsync(IViewCompositionService viewCompositionService);
 }

@@ -17,4 +17,10 @@
     <ProjectReference Include="..\..\src\WPF\XAF.WPF\XAF.WPF.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

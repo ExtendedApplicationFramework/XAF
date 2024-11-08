@@ -1,4 +1,5 @@
 ﻿using DynamicData;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -9,33 +10,41 @@ using XAF.Modularity;
 namespace XAF.Core.Modularity.Internal;
 internal class ServiceModuleHandler : ModuleHandler<IServiceModule>
 {
-    private readonly Dictionary<IServiceModule, ServiceCollection> _serviceCollections = new Dictionary<IServiceModule, ServiceCollection>();
-
-    private readonly IList<ServiceDescriptor> _hostServices;
+    private readonly IList<ServiceDescriptor> _globalServices;
     private readonly ILogger<ServiceModuleHandler> _logger;
-    private readonly List<ServiceDescriptor> _exportedServices = new();
+    private readonly IConfiguration _configuration;
 
-    public ServiceModuleHandler(IServiceCollection hostServices, ILogger<ServiceModuleHandler> logger)
+    private IList<ServiceDescriptor> _moduleServices = [];
+
+    public ServiceModuleHandler(IList<ServiceDescriptor> global, ILogger<ServiceModuleHandler> logger, IConfiguration configuration)
     {
-        _hostServices = hostServices;
+        _globalServices = global;
         _logger = logger;
+        _configuration = configuration;
     }
 
-    public override Task LoadAsync(IServiceModule module)
+    public override Task ConfigureHandler(IModuleDescription description)
+    {
+        _moduleServices = description.Services;
+        return Task.CompletedTask;
+    }
+
+    protected override Task LoadAsync(IServiceModule module)
     {
         var collection = new ServiceCollection();
-        collection.AddRange(_hostServices);
-        module.RegisterServices(collection);
-        var hostedServices = collection.Where(s => s.ServiceType == typeof(IHostedService));
+        collection.AddRange(_globalServices);
+        module.RegisterServices(collection, _configuration);
+        var hostedServices = collection
+            .Except(_globalServices)
+            .Where(s => s.ServiceType == typeof(IHostedService));
 
         if (hostedServices.Any())
         {
-            _logger.LogWarning("Hosted Services are not supported in service module");
+            _logger.LogWarning("Registering hosted services is not supported in modules");
         }
 
         collection.Remove(hostedServices);
 
-        _serviceCollections.Add(module, collection);
         var builder = new LoggingBuilder(collection);
         module.ConfigureLogging(builder);
 
@@ -44,27 +53,13 @@ internal class ServiceModuleHandler : ModuleHandler<IServiceModule>
         foreach (var exportAttribute in exportAttributes)
         {
             var type = exportAttribute.GetType().GetGenericArguments()[0];
-            var service = collection.FirstOrDefault(d => d.ServiceType == type);
-            if (service is null)
-            {
-                throw new InvalidOperationException($"No service of type {type.FullName} registered in Module {module.GetType()}");
-            }
+            var service = collection.FirstOrDefault(d => d.ServiceType == type)
+                ?? throw new InvalidOperationException($"No service of type {type.FullName} registered in Module {module.GetType()}");
 
-            _exportedServices.Add(service);
+            _globalServices.Add(service);
         }
-
+        _moduleServices.Add(collection);
         return Task.CompletedTask;
-    }
-
-    public override Task StartAsync(IServiceModule module)
-    {
-        var serviceCollection = _serviceCollections[module];
-
-        serviceCollection.AddRange(_exportedServices);
-
-        var provider = serviceCollection.BuildServiceProvider();
-
-        return module.StartAsync(provider);
     }
 
 

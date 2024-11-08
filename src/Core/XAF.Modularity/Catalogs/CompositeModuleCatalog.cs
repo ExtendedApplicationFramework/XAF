@@ -4,7 +4,7 @@ public class CompositeModuleCatalog : IModuleCatalog
 
     private readonly HashSet<IModuleCatalog> _catalogs = [];
 
-    public async Task<Module[]> GetModulesAsync(Func<Type, bool> typeMatch)
+    public async Task<IModuleDescription[]> GetModulesAsync(Func<Type, bool> typeMatch)
     {
         var tasks = _catalogs.Select(c => c.GetModulesAsync(typeMatch));
         var m = await Task.WhenAll(tasks);

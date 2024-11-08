@@ -7,7 +7,7 @@ public class AssemblyModuleCatalog : IModuleCatalog
     private Assembly? _assembly;
     private readonly AssemblyModuleCatalogOptions _options;
     private readonly string _assemblyPath;
-    private Module[]? _modules;
+    private IModuleDescription[]? _modules;
 
     public AssemblyModuleCatalog(Assembly assembly, AssemblyModuleCatalogOptions? options = null)
     {
@@ -22,9 +22,9 @@ public class AssemblyModuleCatalog : IModuleCatalog
         _options = options ?? new();
     }
 
-    public Task<Module[]> GetModulesAsync(Func<Type, bool> typeMatch)
+    public Task<IModuleDescription[]> GetModulesAsync(Func<Type, bool> typeMatch)
     {
-        var modules = new List<Module>();
+        var modules = new List<IModuleDescription>();
         if (_modules is not null)
         {
             return Task.FromResult(_modules);
@@ -53,7 +53,7 @@ public class AssemblyModuleCatalog : IModuleCatalog
                 continue;
             }
 
-            modules.Add(Module.FromType(type, this));
+            modules.Add(ModuleDescription.FromType(type, this));
         }
 
         _modules = modules.ToArray();

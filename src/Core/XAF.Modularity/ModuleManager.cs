@@ -1,60 +1,94 @@
-﻿using XAF.Modularity.Catalogs;
+﻿using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Security.AccessControl;
+using XAF.Modularity.Catalogs;
 
 namespace XAF.Modularity;
 public class ModuleManager : IModuleManager
 {
+    private readonly ILogger<ModuleManager> _logger;
+
     protected Dictionary<Type, IModuleHandler> ModuleHandlers { get; }
     protected IEnumerable<IModuleCatalog> ModuleCatalogs { get; }
-    protected ModuleManagerOptions? Options { get; }
 
-    protected List<Module> ModulesInternal { get; } = [];
-    protected List<(object instance, Module module)> LoadedModules { get; } = [];
-    protected Func<Module, Task<object>> ModuleInstanceFactory { get; }
+    private List<IModuleDescription> _discoveredModules = [];
+    protected List<IModuleDescription> LoadedModules { get; } = [];
 
-    public ModuleManager(IEnumerable<IModuleHandler> moduleHandlers, IEnumerable<IModuleCatalog> moduleCatalogs, ModuleManagerOptions options)
+    public ModuleManager(
+        IEnumerable<IModuleHandler> moduleHandlers,
+        IEnumerable<IModuleCatalog> moduleCatalogs,
+        ILogger<ModuleManager> logger)
     {
         ModuleHandlers = moduleHandlers.ToDictionary(h => h.ModuleType);
         ModuleCatalogs = moduleCatalogs;
-        Options = options;
-        ModuleInstanceFactory = Options.ModuleInstanceFactory;
+        _logger = logger;
     }
 
-    public IEnumerable<Module> Modules => ModulesInternal;
+    public IEnumerable<IModuleDescription> Modules => _discoveredModules;
 
     public bool Initialized { get; protected set; }
 
-    public virtual async Task Initialize()
+    public virtual async Task DiscoverModules()
     {
         foreach (var catalog in ModuleCatalogs)
         {
-            ModulesInternal.AddRange(await catalog.GetModulesAsync(IsModule));
+            _discoveredModules.AddRange(await catalog.GetModulesAsync(IsModule));
         }
         Initialized = true;
     }
 
     public virtual async Task LoadModules()
     {
-        foreach (var module in ModulesInternal)
+        if (!Initialized)
         {
-            var moduleInstance = await ModuleInstanceFactory(module);
-            module.Handlers ??= GetModuleHandlersFor(module.Type);
+            throw new InvalidOperationException("Call Initialize first");
+        }
 
-            if (!module.Handlers.Any())
+        foreach (var moduleDescription in _discoveredModules)
+        {
+            _logger.LogDebug("Loading Module '{ModuleName}'", moduleDescription.Name);
+
+            moduleDescription.Handlers.AddRange(GetModuleHandlersFor(moduleDescription.ModuleType));
+
+            if (!moduleDescription.Handlers.Any())
             {
-                throw new KeyNotFoundException($"Not handler for module of type {module.Name} found");
+                _logger.LogError("No handler for module '{Name} ({Type})' found", moduleDescription.Name, moduleDescription.ModuleType);
+                continue;
+            }
+            var configTasks = moduleDescription.Handlers.Select(h => h.ConfigureHandler(moduleDescription));
+
+            await Task.WhenAll(configTasks);
+
+            if (moduleDescription.Instance is null)
+            {
+                var moduleInstance = CreateModule(moduleDescription);
+                moduleDescription.SetInstance(moduleInstance);
             }
 
-            var tasks = module.Handlers.Select(h => h.LoadAsync(moduleInstance));
+            _logger.LogDebug("Module instance for module '{ModuleName}' created", moduleDescription.Name);
+
+            _logger.LogDebug(
+               "The following module handlers are used for module '{ModuleName}':\n\t{Handlers}",
+               moduleDescription.Name,
+               moduleDescription.Handlers.Select(h => h.GetType().FullName! + "\n\t"));
+
+
+            var tasks = moduleDescription.Handlers.Select(h => h.LoadAsync(moduleDescription.Instance!));
             await Task.WhenAll(tasks);
-            LoadedModules.Add((moduleInstance, module));
+            LoadedModules.Add(moduleDescription);
+            _logger.LogDebug("Module '{ModuleName}' Loaded", moduleDescription.Name);
         }
     }
 
-    protected virtual IEnumerable<IModuleHandler> GetModuleHandlersFor(Type moduleType)
+    protected virtual List<IModuleHandler> GetModuleHandlersFor(Type moduleType)
     {
+        var handlers = new List<IModuleHandler>();
+
         if (ModuleHandlers.ContainsKey(moduleType))
         {
-            yield return ModuleHandlers[moduleType];
+            handlers.Add(ModuleHandlers[moduleType]);
         }
 
         if (moduleType.IsClass)
@@ -62,33 +96,51 @@ public class ModuleManager : IModuleManager
             var baseType = moduleType.BaseType;
             while (baseType != null)
             {
-                if (ModuleHandlers.ContainsKey(baseType))
+                if (ModuleHandlers.TryGetValue(baseType, out var value))
                 {
-                    yield return ModuleHandlers[baseType];
+                    handlers.Add(value);
+                    break;
                 }
+                baseType = baseType.BaseType;
             }
         }
 
         foreach (var itf in moduleType.GetInterfaces())
         {
-            if (ModuleHandlers.ContainsKey(itf))
+            if (ModuleHandlers.TryGetValue(itf, out var value))
             {
-                yield return ModuleHandlers[itf];
+                handlers.Add(value);
             }
         }
+
+        return handlers;
     }
 
     public virtual async Task StartLoadedModules()
     {
-        foreach (var (instance, module) in LoadedModules)
+        foreach (var module in LoadedModules)
         {
-            var tasks = module.Handlers.Select(h => h.StartAsync(instance));
+            var tasks = module.Handlers.Select(h => h.StartAsync(module.Instance!));
             await Task.WhenAll(tasks);
         }
     }
 
+    protected virtual object CreateModule(IModuleDescription moduleDescription)
+    {
+        var ctor = moduleDescription.ModuleType.GetConstructor(Type.EmptyTypes);
+
+        return ctor == null
+            ? throw new NotSupportedException("The default module manager can't handle Modules with non empty constructors")
+            : ctor.Invoke([]);
+    }
+
     protected virtual bool IsModule(Type type)
     {
+        if (type.IsAbstract || type.IsInterface)
+        {
+            return false;
+        }
+
         if (ModuleHandlers.ContainsKey(type))
         {
             return true;
@@ -103,6 +155,7 @@ public class ModuleManager : IModuleManager
                 {
                     return true;
                 }
+                baseType = baseType.BaseType;
             }
         }
 

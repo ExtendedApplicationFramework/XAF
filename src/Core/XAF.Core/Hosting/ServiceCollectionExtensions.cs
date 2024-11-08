@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
+using XAF.Core.Modularity.Internal;
 using XAF.Modularity;
 using XAF.Modularity.Catalogs;
 using XAF.Modularity.Context;
@@ -13,7 +14,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddModuleHandler<THandler>(this IServiceCollection services)
         where THandler : class, IModuleHandler
     {
-        services.TryAddEnumerable(new ServiceDescriptor(typeof(IModuleHandler), typeof(THandler)));
+        services.TryAddEnumerable(new ServiceDescriptor(typeof(IModuleHandler), typeof(THandler), ServiceLifetime.Transient));
         return services;
     }
 
