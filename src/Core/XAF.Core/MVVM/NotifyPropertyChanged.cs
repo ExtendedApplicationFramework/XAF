@@ -44,9 +44,14 @@ public abstract class NotifyPropertyChanged : INotifyPropertyChanged
         {
             return false;
         }
-        OnPropertyChanging(propertyName, backingField, value);
+        
+        if(!OnPropertyChanging(propertyName, backingField, value))
+        {
+            return false;
+        }
+
         backingField = value;
-        OnPropertyChanged(propertyName, value);
+        OnPropertyChanged(propertyName);
         return true;
     }
 
@@ -102,9 +107,9 @@ public abstract class NotifyPropertyChanged : INotifyPropertyChanged
     /// <param name="propertyName">the name of the updated property</param>
     /// <param name="oldValue">the old value</param>
     /// <param name="newValue">the new value</param>
-    protected virtual void OnPropertyChanging(string propertyName, object? oldValue, object? newValue)
+    protected virtual bool OnPropertyChanging(string propertyName, object? oldValue, object? newValue)
     {
-
+        return true;
     }
 
     /// <summary>
@@ -112,7 +117,7 @@ public abstract class NotifyPropertyChanged : INotifyPropertyChanged
     /// </summary>
     /// <param name="propertyName">the name of the updated property</param>
     /// <param name="newValue">the new value</param>
-    protected virtual void OnPropertyChanged(string propertyName, object? newValue)
+    protected virtual void OnPropertyChanged(string propertyName)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
