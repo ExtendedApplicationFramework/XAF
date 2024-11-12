@@ -24,16 +24,16 @@ public interface IWindowService
     Task<bool> CloseWindowAsync<TViewModel>(TViewModel vm, CancellationToken cancle1)
         where TViewModel : IXafViewModel;
 
-    Task<TResult?> ShowDialogAsync<TResult, TViewModel>()
+    Task<TResult> ShowDialogAsync<TResult, TViewModel>()
         where TViewModel : class, IXafDialogViewModel<TResult>;
 
-    Task<TResult?> ShowDialogAsync<TResult, TViewModel>(TViewModel vm)
+    Task<TResult> ShowDialogAsync<TResult, TViewModel>(TViewModel vm)
         where TViewModel : class, IXafDialogViewModel<TResult>;
 
-    Task<TResult?> ShowDialogAsync<TResult, TViewModel, TParameter>(TParameter parameter)
+    Task<TResult> ShowDialogAsync<TResult, TViewModel, TParameter>(TParameter parameter)
         where TViewModel : class, IXafDialogViewModel<TResult, TParameter>;
 
-    Task<TResult?> ShowDialogAsync<TResult, TViewModel, TParameter>(TViewModel vm, TParameter parameter)
+    Task<TResult> ShowDialogAsync<TResult, TViewModel, TParameter>(TViewModel vm, TParameter parameter)
         where TViewModel : class, IXafDialogViewModel<TResult, TParameter>;
 }
 

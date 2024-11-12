@@ -8,11 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\XAF.Core\XAF.Core.csproj" />
+    <Compile Remove="Hosting\Internal\**" />
+    <EmbeddedResource Remove="Hosting\Internal\**" />
+    <None Remove="Hosting\Internal\**" />
+    <Page Remove="Hosting\Internal\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Hosting\Internal\" />
+    <ProjectReference Include="..\..\Core\XAF.Core\XAF.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

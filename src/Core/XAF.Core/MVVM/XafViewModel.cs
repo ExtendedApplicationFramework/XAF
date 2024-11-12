@@ -1,28 +1,14 @@
 ﻿namespace XAF.Core.MVVM;
 public abstract class XafViewModel : NotifyPropertyChanged, IXafViewModel
 {
-    private readonly SemaphoreSlim _waitForClose = new SemaphoreSlim(0);
-    public virtual void Prepare() { }
+    public BindableTask? LoadTask { get; set; }
+    public BindableTask? UnloadTask { get; set; }
 
-    public virtual Task WhenSelected()
-    {
-        return Task.CompletedTask;
-    }
-
-    public virtual Task UnloadAsync()
-    {
-        _waitForClose.Release();
-        return Task.CompletedTask;
-    }
+    public virtual void Initialize() { }
 
     public virtual int CompareTo(IXafViewModel? other)
     {
         return 0;
-    }
-
-    public virtual Task WaitForViewClose()
-    {
-        return _waitForClose.WaitAsync();
     }
 
     public virtual Task LoadAsync()
@@ -30,7 +16,7 @@ public abstract class XafViewModel : NotifyPropertyChanged, IXafViewModel
         return Task.CompletedTask;
     }
 
-    public virtual Task WhenUnselected()
+    public virtual Task UnloadAsync()
     {
         return Task.CompletedTask;
     }
@@ -38,5 +24,5 @@ public abstract class XafViewModel : NotifyPropertyChanged, IXafViewModel
 
 public abstract class XafViewModel<TParameter> : XafViewModel, IXafViewModel<TParameter>
 {
-    public abstract void Prepare(TParameter parameter);
+    public abstract void Initialize(TParameter parameter);
 }

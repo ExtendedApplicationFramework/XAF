@@ -20,6 +20,9 @@ public interface IViewModelPresenter
     bool Select<TViewModel>(TViewModel vm, CancellationToken cancellation)
         where TViewModel : IXafViewModel;
 
+    bool Unselect<TViewModel>(TViewModel vm, CancellationToken cancellation)
+        where TViewModel : IXafViewModel;
+
     bool Remove<TViewModel>(TViewModel viewModel, CancellationToken cancellation)
         where TViewModel : IXafViewModel;
 }

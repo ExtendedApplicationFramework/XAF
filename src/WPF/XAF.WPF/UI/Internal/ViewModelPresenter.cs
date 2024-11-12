@@ -39,12 +39,6 @@ internal class ViewModelPresenter : IViewModelPresenter
 
         Views = new ViewCollection();
         SelectedViews = new ViewCollection();
-
-        SelectedViews
-            .OnItemAdded(async i => await i.viewModel.WhenSelected())
-            .OnItemRemoved( async i => await i.viewModel.WhenUnselected())
-            .Subscribe()
-            .DisposeWith(_compositeDisposable);
     }
 
     public void AttachTo(FrameworkElement container)
@@ -93,8 +87,7 @@ internal class ViewModelPresenter : IViewModelPresenter
         }
 
         var view = _viewLocator.GetViewFor<TViewModel>();
-        view.DataContext = viewModel;
-        view.IsVisibleChanged += async (_, args) => await VisibilityChanged((bool)args.NewValue, viewModel);
+        ViewModelLocator.AttachToView(view, viewModel);
 
         if (cancellationToken.IsCancellationRequested)
         {
@@ -108,14 +101,32 @@ internal class ViewModelPresenter : IViewModelPresenter
 
     public bool Select<TViewModel>(TViewModel vm, CancellationToken cancellation) where TViewModel : IXafViewModel
     {
-        throw new NotImplementedException();
+        if (SelectedViews.ContainsKey(vm))
+        {
+            return true;
+        }
+
+        if (!Views.TryGetValue(vm, out var view))
+        {
+            return false;
+        }
+
+        SelectedViews.Add(vm, view);
+
+        return true;
+
+    }
+
+    public bool Unselect<TViewModel>(TViewModel vm, CancellationToken cancellation) where TViewModel : IXafViewModel
+    {
+        return SelectedViews.Remove(vm);
     }
 
     public bool Remove<TViewModel>(TViewModel viewModel, CancellationToken cancellation) where TViewModel : IXafViewModel
     {
         if (!Views.ContainsKey(viewModel))
         {
-            return false;
+            return true;
         }
 
         if (cancellation.IsCancellationRequested)
@@ -123,18 +134,13 @@ internal class ViewModelPresenter : IViewModelPresenter
             return false;
         }
 
-        if (SelectedViews.ContainsKey(viewModel))
-        {
-            SelectedViews.Remove(viewModel);
-        }
+        SelectedViews.Remove(viewModel);
 
+        var view = Views[viewModel];
+
+        ViewModelLocator.DetachFromView(view, viewModel);
         Views.Remove(viewModel);
 
         return true;
-    }
-
-    private Task VisibilityChanged<TViewModel>(bool newValue, TViewModel viewModel) where TViewModel : IXafViewModel
-    {
-        return newValue ? viewModel.LoadAsync() : viewModel.UnloadAsync();
     }
 }

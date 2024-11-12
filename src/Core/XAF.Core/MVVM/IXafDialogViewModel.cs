@@ -7,9 +7,13 @@ using System.Threading.Tasks;
 namespace XAF.Core.MVVM;
 public interface IXafDialogViewModel<TResult> : IXafViewModel
 {
-    event EventHandler<TResult?> RequestClose;
+    TResult DefaultResult { get; }
 
-    bool CanClose();
+    event EventHandler<TResult>? CloseDialogRequested;
+
+    bool CanClose(TResult result);
+
+    bool Cancle();
 }
 
 public interface IXafDialogViewModel<TResult, TParameter> : IXafViewModel<TParameter>, IXafDialogViewModel<TResult>

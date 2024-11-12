@@ -24,16 +24,23 @@ internal class SelectorAdapter : ViewAdapter<Selector>
             .DisposeWith(disposables);
 
         presenter.SelectedViews
-            .OnItemAdded(i => ItemSelected(presenter, i.viewModel, i.view, container))
+            .OnItemAdded(i => ItemSelected(presenter, i.view, container))
             .Subscribe()
             .DisposeWith(disposables);
 
         return disposables;
     }
 
-    private void ItemSelected(IViewModelPresenter presenter, IXafViewModel viewModel, FrameworkElement view, Selector container)
+    private void ItemSelected(IViewModelPresenter presenter, FrameworkElement view, Selector container)
     {
-        presenter.Remove(viewModel, CancellationToken.None);
+        var current = presenter.SelectedViews.Keys.LastOrDefault();
+
+        if (current is not null)
+        {
+            presenter.Remove(current, CancellationToken.None);
+
+        }
+
         container.SelectedItem = view;
     }
 }

@@ -22,7 +22,7 @@ internal sealed class DefaultViewCompositionService : IViewCompositionService
 
     public Task<bool> AddViewAsync<TViewModel>(object presenterKey, CancellationToken cancellation) where TViewModel : class, IXafViewModel
     {
-        var vm = _serviceProvider.GetRequiredService<TViewModel>();
+        var vm = ActivatorUtilities.GetServiceOrCreateInstance<TViewModel>(_serviceProvider);
         var manipulation = new ViewManipulation(ViewManipulationType.Add, vm, presenterKey);
 
         _viewManipulationRequestedSubject.OnNext(manipulation);
@@ -54,7 +54,7 @@ internal sealed class DefaultViewCompositionService : IViewCompositionService
     public async Task<bool> AddViewAsync<TViewModel, TParameter>(TParameter parameter, object presenterKey, CancellationToken cancellation) where TViewModel : class, IXafViewModel<TParameter>
     {
 
-        var vm = _serviceProvider.GetRequiredService<TViewModel>();
+        var vm = ActivatorUtilities.GetServiceOrCreateInstance<TViewModel>(_serviceProvider);
         var manipulation = new ViewManipulation(ViewManipulationType.Add, vm, presenterKey, parameter);
 
         _viewManipulationRequestedSubject.OnNext(manipulation);
@@ -74,7 +74,7 @@ internal sealed class DefaultViewCompositionService : IViewCompositionService
             return false;
         }
 
-        vm.Prepare(parameter);
+        vm.Initialize(parameter);
 
         if (!presenter.Add(vm, cancellation))
         {
@@ -136,7 +136,7 @@ internal sealed class DefaultViewCompositionService : IViewCompositionService
             return false;
         }
 
-        vm.Prepare(parameter);
+        vm.Initialize(parameter);
 
         if (!presenter.Add(vm, tokenSource.Token))
         {
@@ -234,7 +234,7 @@ internal sealed class DefaultViewCompositionService : IViewCompositionService
             return false;
         }
 
-        vm.Prepare(parameter);
+        vm.Initialize(parameter);
 
         if (!presenter.Select(vm, tokenSource.Token))
         {

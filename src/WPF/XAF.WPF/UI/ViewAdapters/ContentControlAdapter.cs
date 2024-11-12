@@ -18,13 +18,18 @@ internal class ContentControlAdapter : ViewAdapter<ContentControl>
         }
 
         return presenter.Views
-            .OnItemAdded(i => ItemAdded(presenter, i.view, i.viewModel, container))
+            .OnItemAdded(i => ItemAdded(presenter, i.view, container))
             .Subscribe();
     }
 
-    private void ItemAdded(IViewModelPresenter presenter, FrameworkElement view, IXafViewModel viewModel, ContentControl control)
+    private void ItemAdded(IViewModelPresenter presenter, FrameworkElement view, ContentControl control)
     {
-        presenter.Remove(viewModel, CancellationToken.None);
+        var current = presenter.Views.Keys.LastOrDefault();
+        if (current is not null)
+        {
+            presenter.Remove(current, CancellationToken.None);
+        }
+
         control.Content = view;
     }
 }

@@ -17,7 +17,7 @@ public class BindableTask : NotifyPropertyChanged
         CompletedTask = MonitorTaskAsync(task);
     }
 
-    private async Task MonitorTaskAsync(Task task)
+    protected virtual async Task MonitorTaskAsync(Task task)
     {
         try
         {
@@ -26,8 +26,7 @@ public class BindableTask : NotifyPropertyChanged
         }
         catch (Exception ex)
         {
-
-            _onException?.Invoke(ex);
+            OnException(ex);
         }
         finally
         {
@@ -35,7 +34,12 @@ public class BindableTask : NotifyPropertyChanged
         }
     }
 
-    private void NotifyPropertiesChanged(Task task)
+    protected virtual void OnException(Exception exception)
+    {
+        _onException?.Invoke(exception);
+    }
+
+    protected virtual void NotifyPropertiesChanged(Task task)
     {
         if (task.IsCanceled)
         {
@@ -76,81 +80,41 @@ public class BindableTask : NotifyPropertyChanged
     public Exception? InnerException => Exception?.InnerException;
 
     public string? ErrorMessage => InnerException?.Message;
+
+
+    public static BindableTask Create(Task task, Action<Exception>? onException = null)
+        => new(task, onException);
+
+    public static BindableTask Create(Func<Task> asyncAction, Action<Exception>? onException = null)
+        => Create(asyncAction(), onException);
+
+    public static BindableTask<TResult> Create<TResult>(
+        Task<TResult> task,
+        TResult? defaultResult = default,
+        Action<Exception>? onException = null)
+        => new(task, defaultResult, onException);
+
+    public static BindableTask<TResult> Create<TResult>(
+        Func<Task<TResult>> asyncAction,
+        TResult? defaultResult = default,
+        Action<Exception>? onException = null)
+        => Create(asyncAction(), defaultResult, onException);
+
 }
 
-public class BindableTask<TResult> : NotifyPropertyChanged
+public class BindableTask<TResult> : BindableTask
 {
-    private readonly Action<Exception>? _onException;
     private readonly TResult? _defaultResult;
 
     internal BindableTask(Task<TResult> task, TResult? defaultResult, Action<Exception>? onException)
+        : base(task, onException)
     {
         Task = task;
         _defaultResult = defaultResult;
-        _onException = onException;
-        CompletedTask = MonitorTaskAsync(task);
     }
 
-    private async Task MonitorTaskAsync(Task task)
-    {
-        try
-        {
-            await System.Threading.Tasks.Task.Yield();
-            await task;
-        }
-        catch (Exception ex)
-        {
-
-            _onException?.Invoke(ex);
-        }
-        finally
-        {
-            NotifyPropertiesChanged(task);
-        }
-    }
-
-    private void NotifyPropertiesChanged(Task task)
-    {
-        if (task.IsCanceled)
-        {
-            OnPropertyChanged(nameof(IsCanceled));
-        }
-        else if (task.IsFaulted)
-        {
-            OnPropertyChanged(nameof(Exception));
-            OnPropertyChanged(nameof(InnerException));
-            OnPropertyChanged(nameof(ErrorMessage));
-            OnPropertyChanged(nameof(IsFaulted));
-        }
-        else
-        {
-            OnPropertyChanged(nameof(IsSuccessfullyCompleted));
-        }
-
-        OnPropertyChanged(nameof(IsCompleted));
-        OnPropertyChanged(nameof(IsRunning));
-    }
-
-    public Task<TResult> Task { get; }
-
-    public Task CompletedTask { get; }
+    public new Task<TResult> Task { get; }
 
     public TResult? Result => Task.IsCompletedSuccessfully ? Task.Result : _defaultResult;
-
-    public bool IsCompleted => Task.IsCompleted;
-
-    public bool IsRunning => !Task.IsCompleted;
-
-    public bool IsSuccessfullyCompleted => Task.IsCompletedSuccessfully;
-
-    public bool IsFaulted => Task.IsFaulted;
-
-    public bool IsCanceled => Task.IsCanceled;
-
-    public AggregateException? Exception => Task.Exception;
-
-    public Exception? InnerException => Exception?.InnerException;
-
-    public string? ErrorMessage => InnerException?.Message;
 }
 
